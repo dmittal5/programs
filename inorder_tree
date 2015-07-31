@@ -1,0 +1,118 @@
+#include <stdio.h>
+#include <stdlib.h>
+# define max 100
+struct node
+{
+    struct node *left,*right;
+    int item;
+} ;
+
+
+void push(struct node *stack[max] ,int *top ,struct node *add)
+{
+    stack[(*top)] = add ;
+    (*top)++;
+    return;
+}
+
+struct node *pop(struct node *stack[max] ,int *top)
+{
+    return stack[(*top)];
+}
+
+int stack_empty(int *top)
+{
+    if((*top)==-1)
+        return 1;
+    else return 0;
+}
+
+void inorder(struct node *stack[max] ,int *top,struct node *ptr)
+{
+
+    while(!stack_empty(top))
+    {
+        while(ptr->left!=NULL)
+        {
+            push(stack,top,ptr);
+            ptr = ptr->left;
+        }
+        while(ptr->right==NULL && (!stack_empty(top)))
+        {
+            printf("%d \n",ptr->item);
+            printf("top b4 %d\n",*top);
+            ptr = pop(stack,top);
+            (*top)--;
+            printf("top after %d \n",*top);
+        }
+        printf("%d\n",ptr->item);
+        if(ptr->right!=NULL)
+            ptr=ptr->right;
+    }
+}
+
+struct node *create_tree(struct node *ptr,struct node *start)
+{
+    int l,r;
+    struct node *tmp;
+    tmp = (struct node *)malloc(sizeof(struct node));
+    printf("1 for left");
+    scanf("%d",&l);
+    tmp->item  = l;
+    tmp->left = NULL;
+    tmp->right = NULL;
+    if(l)
+    {
+        ptr->left = tmp;
+        ptr->left = create_tree(ptr->left,start);
+    }
+
+    tmp = (struct node *)malloc(sizeof(struct node));
+    printf("1 for right");
+    scanf("%d",&r);
+    tmp->item = r;
+    tmp->left = NULL;
+    tmp->right = NULL;
+
+    if(r)
+    {
+        ptr->right = tmp;
+        ptr->right = create_tree(ptr->right,start);
+    }
+    if(ptr == start)
+        return ptr;
+    printf("chck");
+    return ptr;
+}
+
+void inorder_r(struct node *start)
+{
+    if(start==NULL)
+        return;
+    inorder_r(start->left);
+    printf("%d",start->item);
+    inorder_r(start->right);
+}
+
+int main()
+{
+    int x,data,top = 0;
+    struct node *start,*tmp,*stack[max];
+    printf("1 for non empty list else -1");
+    scanf("%d",&x);
+    if(x != -1)
+    {
+        tmp = (struct node *)malloc(sizeof(struct node));
+        printf("enter root item");
+        scanf("%d",&data);
+        tmp->item = data;
+        tmp->left = NULL;
+        tmp->right = NULL;
+        start = tmp;
+        start = create_tree(start,start);
+    }
+
+    inorder_r(start);
+    inorder(stack ,&top ,start);
+    return 0;
+}

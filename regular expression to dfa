@@ -1,0 +1,415 @@
+#include <iostream>
+#include <stdlib.h>
+#include <stack>
+#include <queue>
+#include <cstring>
+#include <string>
+#include<math.h>
+
+using namespace std;
+char pos[20], po[30] ;
+int w ; // number of leaf nodes .
+
+struct tree
+{
+    bool null ;
+    struct tree *l_child, *r_child ;
+    char c ;
+    int m,n ;
+    int f_pos[30] , l_pos[30] ;
+    int pos ;
+};
+
+int priority(char a)
+{
+    switch(a)
+    {
+        case '(' : return 0 ;
+        case '+' : return 1 ;
+        case '.' : return 2 ;
+        case '*' : return 3 ;
+        default  : return 0 ;
+    }
+}
+
+
+void in_pf(string in)
+{
+    int i ,n , p =0 ;
+    char next ;
+    stack<char> st ;
+    n = in.size() ;
+    for(i=0;i<n;i++)
+    {
+        switch(in[i])
+        {
+            case '(' :
+                        st.push(in[i]) ;
+                        break ;
+
+            case ')' :
+                        next = st.top() ;
+                        st.pop() ;
+                        while(next != '(')
+                        {
+                            po[p++] = next ;
+                            next = st.top() ;
+                            st.pop() ;
+                        }
+                        break ;
+            case '+' :
+            case '.' :
+                while(!st.empty() && priority(in[i])<= priority(st.top()))
+                {
+                    po[p++] = st.top() ;
+                    st.pop() ;
+                }
+                st.push(in[i]) ;
+                break ;
+            default :
+                {
+                    po[p++] = in[i] ; //operand or * comes .
+
+                }
+        }
+    }
+
+    while(!st.empty())
+    {
+        char c =st.top() ;
+        po[p++] = c ;
+        st.pop() ;
+    }
+    po[p++] = '#';
+    po[p++] = '.' ;
+}
+
+int un(int f[], int l[] ,int r[] ,int m ,int n)
+{
+    int i = 0, j = 0,p = 0;
+  while (i < m && j < n)
+  {
+    if (f[i] < l[j])
+    {
+        r[p++] = f[i];
+        i++ ;
+    }
+    else if (l[j] < f[i])
+    {
+        r[p++] = l[j] ;
+        j++ ;
+    }
+    else
+    {
+        r[p++] = f[i] ;
+        i++ ;
+        j++ ;
+    }
+  }
+    while(i < m)
+        r[p++] = f[i++];
+    while(j < n)
+        r[p++] = l[j++];
+    return p ;
+}
+
+void duplicate(int a1[],int a2[],int n)
+{
+    int i ;
+    for(i=0;i<n;i++)
+        a2[i] = a1[i] ;
+}
+
+struct tree* create_tree()
+{
+    int i = 0,j = 0 , p = 0 ;
+    stack<struct tree *> pf ;
+    struct tree *ptr[30], *c1 ,*c2 ;
+
+    while(po[i] != '\0')
+    {
+        ptr[i] = (struct tree*)malloc(sizeof(struct tree)) ;
+        ptr[i]->c = po[i] ;
+        if(po[i]=='0' || po[i]=='1' || po[i]=='e' || po[i]=='#')
+        {
+            pos[++j] = po[i] ;
+            pf.push(ptr[i]) ;
+            ptr[i]->l_child = NULL ;
+            ptr[i]->r_child = NULL ;
+            ptr[i]->pos = ++p ;
+            if(po[i]=='e')
+            {
+                ptr[i]->null = 1 ;
+                ptr[i]->f_pos[0] = -1 ;
+                ptr[i]->m = 0 ;
+                ptr[i]->l_pos[0] = -1 ;
+                ptr[i]->n = 0 ;
+            }
+            else
+            {
+                ptr[i]->null = 0 ;
+                ptr[i]->f_pos[0] = ptr[i]->l_pos[0] = ptr[i]->pos ;
+                ptr[i]->m = ptr[i]->n = 1 ;
+            }
+        }
+        else
+        {
+            if(po[i]=='+' || po[i]=='.')
+            {
+                c2 = pf.top() ;
+                pf.pop() ;
+                c1 = pf.top() ;
+                pf.pop() ;
+                pf.push(ptr[i]) ;
+                ptr[i]->l_child = c1 ;
+                ptr[i]->r_child = c2 ;
+                if(po[i]=='+')
+                {
+                    ptr[i]->null = c1->null | c2->null ;
+                    ptr[i]->m = un(c1->f_pos,c2->f_pos,ptr[i]->f_pos,c1->m,c2->m) ;
+                    ptr[i]->n = un(c1->l_pos,c2->l_pos,ptr[i]->l_pos,c1->n,c2->n) ;
+                }
+                else
+                {
+                    ptr[i]->null = c1->null & c2->null ;
+                    if(c1->null == 1)
+                       ptr[i]->m = un(c1->f_pos,c2->f_pos,ptr[i]->f_pos,c1->m,c2->m) ;
+                    else
+                    {
+                        duplicate(c1->f_pos,ptr[i]->f_pos,c1->m) ;
+                        ptr[i]->m = c1->m ;
+                    }
+                    if(c2->null == 1)
+                       ptr[i]->n = un(c1->l_pos,c2->l_pos,ptr[i]->l_pos,c1->n,c2->n) ;
+                    else
+                    {
+                        duplicate(c2->l_pos,ptr[i]->l_pos,c1->n) ;
+                        ptr[i]->n = c2->n ;
+                    }
+                }
+            }
+            if(po[i]=='*')
+            {
+                c1 = pf.top() ;
+                pf.pop() ;
+                pf.push(ptr[i]) ;
+                ptr[i]->l_child = c1 ;
+                ptr[i]->r_child = NULL ;
+                ptr[i]->null = 1 ;
+                duplicate(c1->f_pos,ptr[i]->f_pos,c1->m) ;
+                ptr[i]->m = c1->m ;
+                duplicate(c1->l_pos,ptr[i]->l_pos,c1->n) ;
+                ptr[i]->n = c1->n ;
+
+            }
+
+            ptr[i]->pos = -1 ;
+        }
+        i++ ;
+
+    }
+    w = j ;
+    return ptr[i-1] ;
+}
+
+/*void ino(struct tree *ptr)
+{
+    if(ptr== NULL)
+        return ;
+    ino(ptr->l_child);
+    cout<<ptr->c ;
+    int i ;
+    for(i=0;i<ptr->m;i++)
+        cout<<"ptr->f_pos["<<i<<"]\t"<<ptr->f_pos[i] ;
+    for(i=0;i<ptr->n;i++)
+        cout<<"ptr->l_pos["<<i<<"]\t"<<ptr->l_pos[i] ;
+    cout<<"\n" ;
+    ino(ptr->r_child) ;
+}
+*/
+void find_fp(int fp[30][30] ,struct tree * ptr)
+{
+    int i,j ;
+    if(ptr == NULL || ptr->pos != -1)
+        return ;
+
+    find_fp(fp,ptr->l_child) ;
+    if(ptr->c == '*')
+    {
+        for(i=0 ;i < ptr->n ;i++)
+        {
+            for(j=0; j<ptr->m ;j++)
+                fp[ptr->l_pos[i]][ptr->f_pos[j]] = 1 ;
+
+        }
+    }
+
+    if(ptr->c == '.')
+    {
+        for(i=0 ;i<ptr->m ;i++)
+        {
+            for(j=0; j<ptr->n ;j++)
+                fp[ptr->f_pos[i]][ptr->l_pos[j]] = 1 ;
+        }
+    }
+    find_fp(fp,ptr->r_child) ;
+}
+
+void tree_fp(int root[30],int fp[30][30],struct tree *ptr)
+{
+    int i ,j ;
+    if(ptr->c == '.')
+    {
+         for(i=0 ; i< ptr->l_child->n ;i++)
+        {
+            for(j=0; j<ptr->n ;j++)
+               fp[ptr->l_child->l_pos[i]][ptr->l_pos[j]] = 1 ;
+
+        }
+
+     for(i=0;i<ptr->m;i++)
+            root[i] = ptr->f_pos[i] ;
+     for(j=0;j<ptr->n;j++)
+            root[i++] = ptr->f_pos[j] ;
+
+    }
+    root[i] = -1 ;
+    find_fp(fp,ptr->l_child) ;
+    find_fp(fp,ptr->r_child) ;
+}
+
+int bit_mask(deque<int> state_q)
+{
+    int a,up,low,b = 0,x,i ;
+    for(i=0 ; state_q[i] !=-1 ; i++) ;
+    up = i-1 ;
+    low = 0 ;
+    for(i=low ; i<=up ; i++)
+    {
+        x = state_q[i] ;
+        a = 1 << (x-1) ;            //bit masking .
+        b = a|b ;
+    }
+    return b ;
+}
+
+void print_dfa(int transition[50][2])
+{
+    int i ,j ,n=pow(2,w);
+    cout<<"state transition table is : \n" ;
+    cout<<"\n" ;
+    cout<<"\t"<<0<<"\t"<<1 <<"\n";
+    for(i=0 ; i<=n ; i++)
+        cout<<i<<"\t"<< transition[i][0] <<"\t"<<transition[i][1] <<"\n" ;
+}
+
+/*void print_q(deque<int> state_q)
+{
+    int i ;
+    cout<<"queue is" ;
+    for(i=0;i<=10;i++)
+        cout<<state_q[i] ;
+    cout<<state_q[i] ;
+}
+*/
+
+void fp_dfa(int root[10],int fp[30][30],int transition[50][2])
+{
+    int a1 ,b1 ,flag = 0,x,j, i ,b ,low, up ;
+    deque<int> state_q ;
+    for(i=0 ; root[i]!=-1 ; i++)
+        state_q.push_back(root[i]) ;
+    state_q.push_back(-1) ;
+    low = 0 ;
+    up = i-1 ;
+    while(!state_q.empty()&&state_q.front()!= -1)
+    {
+
+        b = bit_mask(state_q) ;
+        for(i=0 ; state_q[i] !=-1 ; i++)
+        {
+            x = state_q[i] ;
+            if(pos[x]  == '0')
+            {
+                for(j=0;j<=w;j++)
+                {
+                    if(fp[x][j] == 1)
+                    {
+                        state_q.push_back(j) ;
+                        a1 = 1 << (j-1) ;
+                        transition[b][0] = a1| transition[b][0];
+                        flag = 1 ;
+                    }
+                }
+            }
+
+        }
+        state_q.push_back(-1) ;
+        for(i=0 ; state_q[i] !=-1 ; i++)
+        {
+            x = state_q[i] ;
+            if(pos[x]  == '1')
+            {
+                for(j=0;j<=w;j++)
+                {
+                    if(fp[x][j] == 1)
+                    {
+                        state_q.push_back(j) ;
+                        a1 = 1 << (j-1) ;
+                        transition[b][1] = a1| transition[b][1];
+                    }
+                }
+            }
+        }
+        if(flag==1)
+        state_q.push_back(-1) ;
+        for(i=0 ; state_q.front() != -1 ; i++)
+            state_q.pop_front() ;
+
+        state_q.pop_front() ;
+    }
+}
+/*
+void print_fp(int fp[30][30])
+{
+    int i,j ;
+    for(i=0;i<=10;i++)
+    {
+        cout<<i<<"\t" ;
+        for(j=0;j<=10;j++)
+        {
+            cout<<fp[i][j]<<"\t" ;
+        }
+        cout<<"\n" ;
+    }
+}
+*/
+int main()
+{
+    int fp[30][30],transition[50][2],root[30],i,j ;
+    string in ;
+    struct tree *p_tree ;
+    char c = 1 ;
+    cout << "conversion from regular expression to dfa "<<c << endl;
+    cin >> in ;
+    in_pf(in) ;
+    for(i=0;i<30;i++)
+    {
+        for(j=0;j<30;j++)
+            fp[i][j] = 0 ;
+    }
+     for(i=0;i<50;i++)
+    {
+        for(j=0;j<2;j++)
+            transition[i][j] = 0 ;
+    }
+
+    po[i] = '\0' ;
+    p_tree = create_tree() ;
+//  ino(p_tree) ;
+    tree_fp(root,fp,p_tree) ;
+//  print_fp(fp) ;
+    fp_dfa(root,fp,transition) ;
+    print_dfa(transition) ;
+    return 0;
+}
